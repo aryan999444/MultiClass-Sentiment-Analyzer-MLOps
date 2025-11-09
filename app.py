@@ -1,14 +1,21 @@
 import streamlit as st
 import sys
+import streamlit as st
+import sys
 import os
 import pandas as pd
+from pathlib import Path
 
 # Adjust path to find the 'src' directory, assuming app.py is in the project root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-# Import the prediction function (which loads the model and vectorizer)
-# NOTE: Make sure your 'predictor.py' file handles the imports correctly.
-from predictor import predict_sentiment
+# Attempt to import the prediction function; if import fails, provide a clear error at runtime
+predict_sentiment = None
+_predictor_import_error = None
+try:
+    from predictor import predict_sentiment
+except Exception as e:
+    _predictor_import_error = e
 
 # MLOps - Data logging path (relative to the project root)
 LOG_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'feedback_log.csv')
@@ -55,26 +62,36 @@ if st.button("Analyze Sentiment"):
         # User entered text but did not consent
         st.error("Please check the consent box to proceed with analysis and log data for MLOps.")
     else:
-        # --- Core Logic: Analysis and MLOps Data Logging ---
-        
-        # 1. Get prediction from the pipeline
-        sentiment = predict_sentiment(user_input)
-        
-        # 2. MLOps function: Log the data with prediction
-        log_feedback(user_input, sentiment)
-        
-        # 3. Display the result with styling
-        st.markdown("---") # Separator for clear output
-        
-        if sentiment == 'positive':
-            st.success(f"**Predicted Sentiment:** {sentiment.upper()} (94% F1-Score)")
-            st.markdown("This model strongly suggests a positive customer experience.")
-        elif sentiment == 'negative':
-            st.error(f"**Predicted Sentiment:** {sentiment.upper()} (80% F1-Score)")
-            st.markdown("Attention! This indicates a high probability of a negative customer experience.")
-        else: # neutral
-            st.warning(f"**Predicted Sentiment:** {sentiment.upper()} (24% F1-Score)")
-            st.markdown("The model detected a neutral/mixed tone. Further review is recommended.")
-            
-        st.caption("User data (review and prediction) has been logged to `data/feedback_log.csv` for future model retraining purposes, demonstrating the project's **MLOps capability**.")
-        st.caption("Model used: Weighted Logistic Regression on TF-IDF features.")
+        # If import failed, show a friendly error instead of crashing Streamlit
+        if _predictor_import_error is not None:
+            st.error("The prediction module failed to import. Check app logs for details.")
+            st.exception(_predictor_import_error)
+        else:
+            try:
+                # 1. Get prediction from the pipeline
+                sentiment = predict_sentiment(user_input)
+
+                # 2. MLOps function: Log the data with prediction
+                log_feedback(user_input, sentiment)
+
+                # 3. Display the result with styling
+                st.markdown("---") # Separator for clear output
+
+                if sentiment == 'positive':
+                    st.success(f"**Predicted Sentiment:** {sentiment.upper()} (94% F1-Score)")
+                    st.markdown("This model strongly suggests a positive customer experience.")
+                elif sentiment == 'negative':
+                    st.error(f"**Predicted Sentiment:** {sentiment.upper()} (80% F1-Score)")
+                    st.markdown("Attention! This indicates a high probability of a negative customer experience.")
+                elif sentiment == 'neutral':
+                    st.warning(f"**Predicted Sentiment:** {sentiment.upper()} (24% F1-Score)")
+                    st.markdown("The model detected a neutral/mixed tone. Further review is recommended.")
+                else:
+                    st.info(f"**Predicted Sentiment:** {sentiment}")
+
+                st.caption("User data (review and prediction) has been logged to `data/feedback_log.csv` for future model retraining purposes, demonstrating the project's **MLOps capability**.")
+                st.caption("Model used: Weighted Logistic Regression on TF-IDF features.")
+
+            except Exception as e:
+                st.error("An error occurred during prediction. See exception details below:")
+                st.exception(e)
