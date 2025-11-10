@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Class Sentiment Analyzer MLOps Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // Set 'Inter' as the default font globally
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        // Subtle wave animation for the hero title
+                        'wave': 'wave 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        wave: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-6px)' }, // Reduced wave height
+                        }
+                    }
+                }
+            }
+        }
+
+        // Initialize Dark Mode based on localStorage preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+    <style>
+        /* Hide elements until Alpine.js initializes */
+        [x-cloak] { display: none !important; }
+        
+        /* Custom gradient for the Hero section */
+        .gradient-bg {
+            background-image: linear-gradient(to bottom right, #4c1d95, #6d28d9); /* Indigo-900 to Violet-600 */
+        }
+        .dark .gradient-bg {
+            background-image: linear-gradient(to bottom right, #111827, #374151); /* Darker for dark mode */
+        }
+
+        /* Scroll Reveal Effect */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smooth cubic transition */
+            transition-delay: 0.1s;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Global transitions for smooth dark mode change */
+        .dark-mode-transition * {
+            transition-property: background-color, color, border-color, box-shadow, opacity, transform;
+            transition-duration: 300ms;
+            transition-timing-function: ease-in-out;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body x-data="{
+    // Alpine State Management
+    scrolled: false,
+    mobileMenu: false,
+    darkMode: document.documentElement.classList.contains('dark'),
+    
+    // Toggle dark mode function
+    toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        if (this.darkMode) {
+            localStorage.theme = 'dark';
+            document.documentElement.classList.add('dark');
+        } else {
+            localStorage.theme = 'light';
+            document.documentElement.classList.remove('dark');
+        }
+    },
+
+    // Check if user has scrolled for sticky navbar effect
+    observeScroll() {
+        this.scrolled = window.pageYOffset > 60
+    },
+    
+    // Scroll reveal logic
+    reveal() {
+        let reveals = document.querySelectorAll('.reveal');
+        reveals.forEach(el => {
+            let windowHeight = window.innerHeight;
+            let elementTop = el.getBoundingClientRect().top;
+            let revealPoint = 150; // Element appears 150px from bottom of viewport
+            if (elementTop < windowHeight - revealPoint) {
+                el.classList.add('active');
+            }
+        });
+    }
+}" 
+@scroll.window="observeScroll(); reveal()"
+@load.window="reveal()" 
+class="font-sans antialiased dark-mode-transition bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+
+    <nav class="fixed w-full z-50 transition-all duration-300 dark-mode-transition"
+        :class="{ 'bg-indigo-900/90 dark:bg-gray-900/90 shadow-xl backdrop-blur-sm': scrolled, 'bg-transparent': !scrolled }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="#" class="text-white dark:text-indigo-300 font-extrabold text-2xl transition-colors">
+                        MLOps <span class="text-pink-400">Sent.</span>
+                    </a>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#features" class="text-gray-300 hover:text-white transition-colors text-lg">Features</a>
+                    <a href="#how-it-works" class="text-gray-300 hover:text-white transition-colors text-lg">Pipeline</a>
+                    <a href="#story" class="text-gray-300 hover:text-white transition-colors text-lg">Story</a>
+                    <a href="#contact" class="text-gray-300 hover:text-white transition-colors text-lg">Contact</a>
+                    
+                    <button 
+                        @click="toggleDarkMode()"
+                        class="p-2 rounded-full bg-indigo-700/50 dark:bg-gray-700 text-yellow-300 dark:text-white hover:bg-indigo-600/50 dark:hover:bg-gray-600 transition-colors shadow-md"
+                        aria-label="Toggle Dark Mode"
+                    >
+                        <svg x-show="!darkMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg x-show="darkMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="md:hidden flex items-center">
+                    <button @click="mobileMenu = !mobileMenu" class="p-2 rounded-full text-white hover:text-gray-200 focus:outline-none transition-colors">
+                        <svg x-show="!mobileMenu" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg x-show="mobileMenu" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div :class="{'block': mobileMenu, 'hidden': !mobileMenu}" class="md:hidden bg-indigo-900/90 dark:bg-gray-900/90 shadow-lg pb-4" x-cloak>
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="#features" @click="mobileMenu = false" class="block px-3 py-2 text-gray-300 hover:bg-indigo-800 rounded-lg">Features</a>
+                <a href="#how-it-works" @click="mobileMenu = false" class="block px-3 py-2 text-gray-300 hover:bg-indigo-800 rounded-lg">Pipeline</a>
+                <a href="#story" @click="mobileMenu = false" class="block px-3 py-2 text-gray-300 hover:bg-indigo-800 rounded-lg">Project Story</a>
+                <a href="#contact" @click="mobileMenu = false" class="block px-3 py-2 text-gray-300 hover:bg-indigo-800 rounded-lg">Contact</a>
+                <div class="pt-2 px-3">
+                    <button @click="toggleDarkMode(); mobileMenu = false" class="w-full text-left flex items-center justify-center p-2 rounded-lg bg-indigo-700/50 text-white hover:bg-indigo-600/50">
+                        <span x-text="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header id="hero" class="gradient-bg min-h-screen flex items-center text-white relative overflow-hidden pt-20">
+        <div class="absolute inset-0 bg-indigo-900/30 dark:bg-gray-900/30"></div>
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-16">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-left">
+                    <h1 class="text-4xl md:text-6xl font-extrabold mb-6">
+                        Multi-Class Sentiment Analyzer
+                        <span class="inline-block text-pink-400 animate-wave">.</span>
+                    </h1>
+                    <p class="text-xl md:text-2xl mb-8 text-indigo-200 dark:text-gray-300 max-w-lg">
+                        Advanced **MLOps-driven** sentiment analysis with intelligent **class weighting** and continuous feedback loop.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="/app" class="inline-block px-8 py-3 bg-pink-600 hover:bg-pink-700 rounded-xl font-bold 
+                                            transition-transform transform hover:-translate-y-1 shadow-lg text-lg text-center">
+                            Launch App
+                        </a>
+                        <a href="#features" class="inline-block px-8 py-3 border-2 border-indigo-400 text-indigo-200 hover:bg-indigo-700 rounded-xl 
+                                                font-bold transition-colors shadow-lg text-lg text-center">
+                            Explore Features
+                        </a>
+                    </div>
+                </div>
+                <div class="relative mx-auto mt-12 md:mt-0 reveal">
+                    <div class="bg-indigo-700/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-indigo-500/30">
+                        <img src="https://placehold.co/600x400/374151/ffffff?text=Sentiment+Dashboard+Mockup" alt="Sentiment Analyzer Dashboard" 
+                             class="w-full rounded-2xl shadow-xl border border-gray-700" 
+                             loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="py-24 bg-gray-50 dark:bg-gray-900 dark-mode-transition">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-extrabold text-center mb-16 reveal text-gray-900 dark:text-white">Technical Features</h2>
+            <div class="grid md:grid-cols-3 gap-10">
+                <div class="reveal bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-[1.02] transition-transform duration-300">
+                    <div class="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center mb-6 mx-auto shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="m2 9 3-3 3 3"/><path d="M13 18H7a2 2 0 0 1-2-2V6"/><path d="m22 15-3 3-3-3"/><path d="M11 6h6a2 2 0 0 1 2 2v10"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-4 text-gray-800 dark:text-white">MLOps Feedback Loop</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-center">
+                        Continuous model improvement through automated data logging and regular, scheduled retraining.
+                    </p>
+                </div>
+
+                <div class="reveal bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-[1.02] transition-transform duration-300" style="transition-delay: 0.2s;">
+                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6 mx-auto shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-4 text-gray-800 dark:text-white">Intelligent Class Weighting</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-center">
+                        Achieved **24% F1-Score** for the minority (neutral) class by mitigating class imbalance bias.
+                    </p>
+                </div>
+
+                <div class="reveal bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-[1.02] transition-transform duration-300" style="transition-delay: 0.4s;">
+                    <div class="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mb-6 mx-auto shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-center mb-4 text-gray-800 dark:text-white">Lean Tech Stack</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-center">
+                        Built entirely with Python (Scikit-learn, NLTK) and deployed quickly via Streamlit.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="py-24 bg-white dark:bg-gray-950 dark-mode-transition">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-extrabold text-center mb-20 reveal text-gray-900 dark:text-white">The Inference Pipeline</h2>
+            <div class="max-w-4xl mx-auto">
+                <div class="relative">
+                    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-indigo-200 dark:bg-indigo-800 rounded-full"></div>
+                    
+                    <template x-for="(step, index) in [
+                        {title: 'Text Input', desc: 'User submits product review text through the web interface.', align: 'right'},
+                        {title: 'Preprocessing (NLTK)', desc: 'Text cleaning, lowercasing, and stopword removal.', align: 'left'},
+                        {title: 'Vectorization (TF-IDF)', desc: 'Converting clean text into a sparse numerical feature vector.', align: 'right'},
+                        {title: 'Prediction & Logging', desc: 'Weighted model predicts sentiment and logs the result for MLOps feedback.', align: 'left'},
+                    ]">
+                        <div class="md:flex items-center mb-16">
+                            <div class="md:w-1/2" :class="{ 'md:order-1 pr-8 md:text-right': step.align === 'right', 'md:order-2 pl-8': step.align === 'left' }">
+                                <div class="reveal bg-gray-50 dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-indigo-100 dark:border-indigo-700/50">
+                                    <h3 class="text-xl font-bold mb-2 text-indigo-700 dark:text-indigo-300" x-text="`${index + 1}. ${step.title}`"></h3>
+                                    <p class="text-gray-700 dark:text-gray-400" x-text="step.desc"></p>
+                                </div>
+                            </div>
+                            <div class="hidden md:block w-12 h-12 bg-indigo-600 rounded-full absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center shadow-xl border-4 border-white dark:border-gray-950">
+                                <span class="text-white font-extrabold text-xl" x-text="index + 1"></span>
+                            </div>
+                            <div class="md:hidden pt-4 border-l-4 border-indigo-300 ml-4 mb-8"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="story" class="py-24 bg-gray-50 dark:bg-gray-900 dark-mode-transition">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl font-extrabold text-center mb-16 reveal text-gray-900 dark:text-white">Project Story: The Imbalance Challenge</h2>
+                <div class="reveal bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 lg:p-12 border border-indigo-100 dark:border-indigo-800/50">
+                    <h3 class="text-3xl font-bold mb-6 text-indigo-600 dark:text-indigo-400">The Problem: Skewed Data</h3>
+                    <p class="text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+                        Our model was trained on the Flipkart Reviews dataset, which presented an extreme case of **class imbalance**. 
+                        With the vast majority of reviews being positive, the model naturally learned to prioritize the positive class, 
+                        resulting in poor performance (near zero F1-score) on the underrepresented **Neutral** class.
+                    </p>
+                    
+                    <div class="bg-indigo-50 dark:bg-gray-700 rounded-xl p-6 shadow-inner border border-indigo-200 dark:border-gray-600">
+                        <h4 class="text-xl font-bold mb-6 text-gray-800 dark:text-white">Dataset Distribution</h4>
+                        
+                        <!-- Distribution Cards -->
+                        <div class="grid gap-4 mb-6">
+                            <!-- Positive Reviews -->
+                            <div class="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-green-200 dark:border-green-900">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">Positive Reviews</span>
+                                <div class="flex items-center">
+                                    <div class="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mr-3">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 81%"></div>
+                                    </div>
+                                    <span class="text-2xl font-bold text-green-600 dark:text-green-400">81%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Neutral Reviews -->
+                            <div class="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-yellow-200 dark:border-yellow-900">
+                                <div>
+                                    <span class="font-semibold text-gray-700 dark:text-gray-300">Neutral Reviews</span>
+                                    <span class="ml-2 text-xs text-yellow-600 dark:text-yellow-400">(Critical Minority)</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mr-3">
+                                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 5%"></div>
+                                    </div>
+                                    <span class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">5%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Negative Reviews -->
+                            <div class="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-red-200 dark:border-red-900">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">Negative Reviews</span>
+                                <div class="flex items-center">
+                                    <div class="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mr-3">
+                                        <div class="bg-red-500 h-2 rounded-full" style="width: 14%"></div>
+                                    </div>
+                                    <span class="text-2xl font-bold text-red-600 dark:text-red-400">14%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Visual Summary -->
+                        <div class="text-center mt-4">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                The challenge: Improving neutral sentiment detection despite severe class imbalance
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-3xl font-bold mt-8 mb-6 text-indigo-600 dark:text-indigo-400">The Breakthrough</h3>
+                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        By applying a meticulously calculated class weighting strategy during model training, we effectively penalized 
+                        misclassifications of the neutral sentiment. This fundamental MLOps refinement resulted in the significant 
+                        F1-score increase, ensuring the model is valuable across all sentiment categories in production.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-20 bg-gray-900 text-white dark-mode-transition">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-extrabold text-center mb-16 reveal">Connect With The Developer</h2>
+            <div class="max-w-4xl mx-auto">
+                <div class="reveal bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-700">
+                    <div class="grid md:grid-cols-2 gap-10 items-center">
+                        
+                        <div class="text-center md:text-left">
+                            <div class="mb-6 relative inline-block">
+                                <img src="https://placehold.co/192x192/4f46e5/ffffff?text=Dev+Avatar" 
+                                     alt="Developer Avatar" 
+                                     class="w-48 h-48 rounded-full object-cover border-4 border-pink-500 shadow-xl mx-auto md:mx-0"
+                                     loading="lazy">
+                                <div class="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-gray-800"></div>
+                            </div>
+                            <h3 class="text-3xl font-bold mb-2 text-white">Your Name Here</h3>
+                            <p class="text-pink-400 text-lg mb-4">MLOps Engineer & Data Scientist</p>
+                            <p class="text-gray-400 mb-6 max-w-sm md:max-w-none">
+                                Passionate about solving class imbalance issues and building robust, scalable ML pipelines.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <template x-for="item in [
+                                { name: 'GitHub', url: 'https://github.com/aryan999444', icon: '<path d=\'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z\' />'},
+                                { name: 'LinkedIn', url: 'https://linkedin.com/in/your-profile', icon: '<rect width=\'20\' height=\'20\' x=\'2\' y=\'2\' rx=\'5\' ry=\'5\'/><path d=\'M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z\'/><line x1=\'17.5\' x2=\'17.5\' y1=\'6.5\' y2=\'6.5\'/>'},
+                                { name: 'Twitter', url: 'https://twitter.com/your-handle', icon: '<path d=\'M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c1.7 1.3 3.7 2 5.8 2 8.3 0 12-6.5 12-12.28v-1.18a8.3 8.3 0 0 0 2.05-2.12z\'/>'},
+                                { name: 'Email', url: 'mailto:your.email@example.com', icon: '<path d=\'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z\'/><polyline points=\'22,6 12,13 2,6\'/>'},
+                            ]">
+                                <a :href="item.url" target="_blank" rel="noopener noreferrer" 
+                                   class="flex items-center space-x-3 bg-indigo-800/50 hover:bg-indigo-700/50 p-4 rounded-xl transition-colors transform hover:-translate-y-0.5 shadow-md">
+                                    <svg class="w-7 h-7 text-indigo-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" x-html="item.icon"></svg>
+                                    <span class="text-lg text-gray-200 font-semibold" x-text="item.name"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-800 dark:bg-gray-950 py-6">
+        <div class="container mx-auto text-center text-gray-500 text-sm">
+            &copy; 2024 MLOps Sentiment Analyzer Project. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                // Ensure it's not just '#'
+                if (href === '#') return; 
+                
+                e.preventDefault();
+                
+                // Get the target element
+                const targetElement = document.querySelector(href);
+                if (targetElement) {
+                    // Smoothly scroll the target into view
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start' 
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
